@@ -54,6 +54,14 @@ public class RoutingServiceImpl implements RoutingService {
         var deletedInstances = this.serverInstances.stream()
                 .filter(serverInstance -> !currentInstances.contains(serverInstance))
                 .collect(Collectors.toList());
+
+        if (addedInstances.size() != 0) {
+            serverSelector.addServers(addedInstances);
+        }
+
+        if (deletedInstances.size() != 0) {
+            serverSelector.removeServers(deletedInstances);
+        }
     }
 
     private ServerSelector getServerSelector() {

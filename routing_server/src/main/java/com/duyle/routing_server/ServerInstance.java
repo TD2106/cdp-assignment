@@ -11,8 +11,8 @@ import lombok.Setter;
 @EqualsAndHashCode
 public class ServerInstance {
     private String hostIp;
-    private Integer port;
-    private Integer weight;
+    private int port;
+    private int weight;
 
     public String getUrl() {
         return hostIp + ":" + port;
