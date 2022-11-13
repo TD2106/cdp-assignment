@@ -1,6 +1,8 @@
 package com.duyle.routing_server;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RoundRobinServerSelector implements ServerSelector {
     private final List<ServerInstance> serverInstances;
@@ -8,7 +10,7 @@ public class RoundRobinServerSelector implements ServerSelector {
     private int totalServers = 0;
 
     public RoundRobinServerSelector(List<ServerInstance> instances) {
-        serverInstances = instances;
+        serverInstances = new ArrayList<>(instances);
         totalServers = instances.size();
     }
 
@@ -22,18 +24,20 @@ public class RoundRobinServerSelector implements ServerSelector {
     }
 
     @Override
-    public void removeServers(List<ServerInstance> deletedServers) {
-        synchronized (serverInstances) {
-            serverInstances.removeAll(deletedServers);
-            totalServers = serverInstances.size();
-        }
-    }
+    public void updateCurrentServers(List<ServerInstance> currentServerInstances) {
+        var addedInstances = currentServerInstances.stream()
+                .filter(serverInstance -> !this.serverInstances.contains(serverInstance))
+                .collect(Collectors.toList());
+        var deletedInstances = this.serverInstances.stream()
+                .filter(serverInstance -> !currentServerInstances.contains(serverInstance))
+                .collect(Collectors.toList());
 
-    @Override
-    public void addServers(List<ServerInstance> addedServers) {
-        synchronized (serverInstances) {
-            serverInstances.addAll(addedServers);
-            totalServers = serverInstances.size();
+        if (addedInstances.size() != 0 || deletedInstances.size() != 0) {
+            synchronized (this.serverInstances) {
+                this.serverInstances.removeAll(deletedInstances);
+                this.serverInstances.addAll(addedInstances);
+                this.totalServers = this.serverInstances.size();
+            }
         }
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +23,6 @@ public class RoutingServiceImpl implements RoutingService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     private volatile ServerSelector serverSelector;
-    private List<ServerInstance> serverInstances;
 
     @Autowired
     private DiscoveryClient discoveryClient;
@@ -32,12 +30,12 @@ public class RoutingServiceImpl implements RoutingService {
     @Override
     public JsonNode routePostRequest(String requestFullPath, JsonNode requestBody) {
         var currentServerSelector = getServerSelector();
-        var serverInfo = currentServerSelector.next();
-        if (serverInfo == null) {
+        var serverInstance = currentServerSelector.next();
+        if (serverInstance == null) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No application server found");
         }
-        logger.info("Forward the request to server: " + serverInfo.getUrl());
-        var response = restTemplate.postForEntity(serverInfo.getUrl(), requestBody, JsonNode.class);
+        logger.info("Forward the request to server: " + serverInstance.getUrl());
+        var response = restTemplate.postForEntity(serverInstance.getUrl(), requestBody, JsonNode.class);
         return response.getBody();
     }
 
@@ -48,20 +46,7 @@ public class RoutingServiceImpl implements RoutingService {
         var serviceInstances = discoveryClient.getInstances(APPLICATION_SERVER_ID);
         var currentInstances = serviceInstances.stream().map(this::toServerInfo)
                 .collect(Collectors.toList());
-        var addedInstances = currentInstances.stream()
-                .filter(serverInstance -> !this.serverInstances.contains(serverInstance))
-                .collect(Collectors.toList());
-        var deletedInstances = this.serverInstances.stream()
-                .filter(serverInstance -> !currentInstances.contains(serverInstance))
-                .collect(Collectors.toList());
-
-        if (addedInstances.size() != 0) {
-            serverSelector.addServers(addedInstances);
-        }
-
-        if (deletedInstances.size() != 0) {
-            serverSelector.removeServers(deletedInstances);
-        }
+        serverSelector.updateCurrentServers(currentInstances);
     }
 
     private ServerSelector getServerSelector() {
@@ -72,7 +57,6 @@ public class RoutingServiceImpl implements RoutingService {
                     var serverInstances = serviceInstances.stream()
                             .map(this::toServerInfo)
                             .collect(Collectors.toList());
-                    this.serverInstances = serverInstances;
                     serverSelector = new RoundRobinServerSelector(new ArrayList<>(serverInstances));
                 }
             }

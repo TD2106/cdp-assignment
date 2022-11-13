@@ -5,7 +5,5 @@ import java.util.List;
 public interface ServerSelector {
     ServerInstance next();
 
-    void removeServers(List<ServerInstance> serverInstances);
-
-    void addServers(List<ServerInstance> serverInstances);
+    void updateCurrentServers(List<ServerInstance> currentServerInstances);
 }
