@@ -2,25 +2,31 @@ package com.duyle.routing_server;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class RoundRobinServerSelector implements ServerSelector {
     private final List<ServerInstance> serverInstances;
-    private int current = -1;
+    private AtomicInteger current = new AtomicInteger(-1);
     private int totalServers = 0;
+    private ReadWriteLock lock;
 
     public RoundRobinServerSelector(List<ServerInstance> instances) {
         serverInstances = new ArrayList<>(instances);
         totalServers = instances.size();
+        lock = new ReentrantReadWriteLock(true);
     }
 
     @Override
     public ServerInstance next() {
         if (serverInstances.size() == 0) return null;
-        synchronized (serverInstances) {
-            current = (current + 1) % totalServers;
-            return serverInstances.get(current);
-        }
+        lock.readLock().lock();
+        int currentIdx = current.updateAndGet(val -> (val + 1) % totalServers);
+        var serverInstance = serverInstances.get(currentIdx);
+        lock.readLock().unlock();
+        return serverInstance;
     }
 
     @Override
@@ -33,11 +39,11 @@ public class RoundRobinServerSelector implements ServerSelector {
                 .collect(Collectors.toList());
 
         if (addedInstances.size() != 0 || deletedInstances.size() != 0) {
-            synchronized (this.serverInstances) {
-                this.serverInstances.removeAll(deletedInstances);
-                this.serverInstances.addAll(addedInstances);
-                this.totalServers = this.serverInstances.size();
-            }
+            lock.writeLock().lock();
+            this.serverInstances.removeAll(deletedInstances);
+            this.serverInstances.addAll(addedInstances);
+            this.totalServers = this.serverInstances.size();
+            lock.writeLock().unlock();
         }
     }
 }

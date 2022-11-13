@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+    application_server:
+        container_name: application_server
+        build:
+            context: ./application_server
+            dockerfile: ./Dockerfile
+        image: application_server:latest
+        depends_on:
+            - eureka_server
+        ports:
+            - "8000-8020:8081"
+        environment:
+            - EUREKA_URI=http://eureka_server:8761/eureka
+    eureka_server:
+        container_name: eureka_server
+        build:
+            context: ./eureka_server
+            dockerfile: ./Dockerfile
+        image: eureka_server:latest
+        ports:
+            - "8761:8761"
+    routing_server:
+        container_name: routing_server
+        build:
+            context: ./routing_server
+            dockerfile: ./Dockerfile
+        image: routing_server:latest
+        ports:
+            - "8081:8080"
+        depends_on:
+            - eureka_server
+        environment:
+            - EUREKA_URI=http://eureka_server:8761/eureka

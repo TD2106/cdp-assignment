@@ -9,6 +9,6 @@ bootJar {
 	enabled = true
 }
 
-bootBuildImage {
-	enabled = true
+jar {
+	enabled = false
 }

@@ -5,6 +5,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.net.URI;
+import org.springframework.web.util.UriComponentsBuilder;
+
 @Getter
 @Setter
 @Builder
@@ -14,7 +17,12 @@ public class ServerInstance {
     private int port;
     private int weight;
 
-    public String getUrl() {
-        return hostIp + ":" + port;
+    public URI getUri() {
+        return UriComponentsBuilder.newInstance()
+                .scheme("http")
+                .host(hostIp)
+                .port(port)
+                .build()
+                .toUri();
     }
 }

@@ -68,6 +68,8 @@ public class ServerSelectorTest {
         var count3 = new AtomicInteger(0);
         var count4 = new AtomicInteger(0);
 
+        var totalRequests = new AtomicInteger(0);
+
         IntStream.range(0, 900).boxed().parallel().forEach(val -> {
             var server = selector.next();
             if (server == serverInstance1) count1.incrementAndGet();
@@ -75,7 +77,7 @@ public class ServerSelectorTest {
             else if (server == serverInstance3) count3.incrementAndGet();
             else count4.incrementAndGet();
 
-            if (val == 600) {
+            if (totalRequests.incrementAndGet() == 600) {
                 selector.updateCurrentServers(Arrays.asList(serverInstance1, serverInstance4));
             }
         });

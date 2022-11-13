@@ -15,15 +15,12 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/api")
 public class RoutingController {
-    private final Logger logger = LoggerFactory.getLogger(RoutingController.class);
-
     @Autowired
     private RoutingService routingService;
 
     @PostMapping(value = "**")
     public JsonNode routeRequest(@RequestBody JsonNode body, HttpServletRequest request) {
         String fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-        logger.info(fullPath);
         return routingService.routePostRequest(fullPath, body);
     }
 }

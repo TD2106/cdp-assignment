@@ -8,6 +8,7 @@ import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -34,9 +35,14 @@ public class RoutingServiceImpl implements RoutingService {
         if (serverInstance == null) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No application server found");
         }
-        logger.info("Forward the request to server: " + serverInstance.getUrl());
-        var response = restTemplate.postForEntity(serverInstance.getUrl(), requestBody, JsonNode.class);
-        return response.getBody();
+        var uri = serverInstance.getUri().resolve(requestFullPath);
+        logger.info("Forward the request to server: " + uri);
+        try {
+            var response = restTemplate.postForEntity(uri, requestBody, JsonNode.class);
+            return response.getBody();
+        } catch (HttpClientErrorException ex) {
+            throw new ResponseStatusException(HttpStatus.valueOf(ex.getRawStatusCode()), ex.getMessage());
+        }
     }
 
     @Override
