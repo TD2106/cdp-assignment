@@ -1,0 +1,5 @@
+rootProject.name = 'coda_payment_assignment'
+
+include 'application_server'
+include 'routing_server'
+include 'eureka_server'
