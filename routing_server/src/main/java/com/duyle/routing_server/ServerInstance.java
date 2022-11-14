@@ -1,9 +1,6 @@
 package com.duyle.routing_server;
 
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.net.URI;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -12,6 +9,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Setter
 @Builder
 @EqualsAndHashCode
+@ToString
 public class ServerInstance {
     private String hostIp;
     private int port;

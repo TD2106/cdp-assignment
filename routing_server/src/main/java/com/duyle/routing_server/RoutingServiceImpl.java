@@ -50,6 +50,7 @@ public class RoutingServiceImpl implements RoutingService {
         if (serverSelector == null) return;
 
         var serviceInstances = discoveryClient.getInstances(APPLICATION_SERVER_ID);
+        logger.info("Going to update the server selector with {} instances", serviceInstances.size());
         var currentInstances = serviceInstances.stream().map(this::toServerInfo)
                 .collect(Collectors.toList());
         serverSelector.updateCurrentServers(currentInstances);
@@ -60,6 +61,7 @@ public class RoutingServiceImpl implements RoutingService {
             synchronized (this) {
                 if (serverSelector == null) {
                     var serviceInstances = discoveryClient.getInstances(APPLICATION_SERVER_ID);
+                    logger.info("Going to init the server selector with {} instances", serviceInstances.size());
                     var serverInstances = serviceInstances.stream()
                             .map(this::toServerInfo)
                             .collect(Collectors.toList());
