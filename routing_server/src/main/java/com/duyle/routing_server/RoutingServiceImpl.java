@@ -6,13 +6,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.HandlerMapping;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +34,17 @@ public class RoutingServiceImpl implements RoutingService {
     private DiscoveryClient discoveryClient;
 
     @Override
-    public JsonNode routePostRequest(String requestFullPath, JsonNode requestBody) {
+    public JsonNode routePostRequest(HttpServletRequest request, JsonNode requestBody) {
+        var requestFullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        Enumeration<String> headerNames = request.getHeaderNames();
+        HttpHeaders headers = new HttpHeaders();
+
+        while (headerNames != null && headerNames.hasMoreElements()) {
+            var headerName = headerNames.nextElement();
+            headers.set(headerName, request.getHeader(headerName));
+        }
+        HttpEntity<JsonNode> entity = new HttpEntity<>(requestBody, headers);
+
         var currentServerSelector = getServerSelector();
         var serverInstance = currentServerSelector.next();
         if (serverInstance == null) {
@@ -38,7 +53,7 @@ public class RoutingServiceImpl implements RoutingService {
         var uri = serverInstance.getUri().resolve(requestFullPath);
         logger.info("Forward the request to server: " + uri);
         try {
-            var response = restTemplate.postForEntity(uri, requestBody, JsonNode.class);
+            var response = restTemplate.postForEntity(uri, entity, JsonNode.class);
             return response.getBody();
         } catch (HttpClientErrorException ex) {
             throw new ResponseStatusException(HttpStatus.valueOf(ex.getRawStatusCode()), ex.getMessage());
